@@ -20,10 +20,14 @@ class Yomu
       '-t'
     when :html
       '-h'
+    when :xhtml
+      '-x'
     when :metadata
       '-m'
     when :mimetype
       '-m'
+    when :attachments
+      "-z --extract-dir=#{temporary_directory = Dir.mktmpdir}"
     end
 
     result = IO.popen "#{java} -Djava.awt.headless=true -jar #{Yomu::JARPATH} #{switch}", 'r+' do |io|
@@ -41,6 +45,8 @@ class Yomu
       YAML.load quote(result)
     when :mimetype
       MIME::Types[YAML.load(quote(result))['Content-Type']].first
+    when :attachments
+      temporary_directory
     end
   end
 
@@ -96,6 +102,17 @@ class Yomu
     @text = Yomu.read :html, data
   end
 
+  # Returns the text content of the Yomu document in XHTML.
+  #
+  #   yomu = Yomu.new 'sample.pages'
+  #   yomu.xhtml
+
+  def xhtml
+    return @text if defined? @text
+
+    @text = Yomu.read :html, data
+  end
+
   # Returns the metadata hash of the Yomu document.
   #
   #   yomu = Yomu.new 'sample.pages'
@@ -117,6 +134,17 @@ class Yomu
     return @mimetype if defined? @mimetype
 
     @mimetype = MIME::Types[metadata['Content-Type']].first
+  end
+
+  # Returns the array of attachment object of the Yomu document.
+  #
+  #   yomu = Yomu.new 'sample.docx'
+  #   yomu.attachments #=> 
+
+  def attachments
+    return @attachments if defined? @attachments
+
+    @attachments = Yomu.read :attachments, data
   end
 
   # Returns +true+ if the Yomu document was specified using a file path.
